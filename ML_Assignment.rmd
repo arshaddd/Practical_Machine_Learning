@@ -1,0 +1,127 @@
+---
+title: "PML"
+author: "Arshad!"
+date: "17/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+
+###  This Document is for the Peer Assessment of Pracitial Machine Learning using R  Mark Down file knit in HTML file. 
+
+# Preparing
+
+```{r}
+library(caret)
+library(knitr)
+library(rpart)
+library(randomForest)
+library(corrplot)
+library(ElemStatLearn)
+set.seed(666)
+
+setwd("C:/Users/arsha/OneDrive/Desktop/Practical_ML")
+
+```
+
+
+#   Loading the Data
+
+```{r}
+
+fasb <- read.csv("./pml-training.csv", header = T, sep = ",", na.strings = c("NA", ""))
+
+anab <- read.csv("./pml-testing.csv", header = T, sep = ",", na.strings = c("NA", ""))
+
+```
+
+#   Data Exploring
+
+```{r}
+dim(fasb)
+table(fasb$classe)
+
+```
+###  in traning dataset  there are 19622 observations and 160 variables. There are some variables haveing a missing values.
+
+```{r}
+NA_Count = sapply(1:dim(fasb)[2], function(x)sum(is.na(fasb[,x])))
+NA_list = which(NA_Count>0)
+colnames(fasb[,c(1:7)])
+
+fasb <- fasb[, -1]
+ifasb = createDataPartition(fasb$classe, p=0.60, list=F)
+fasb  = fasb[ifasb,]
+validating = fasb[-ifasb,]
+```
+
+
+```{r}
+
+sum((colSums(!is.na(fasb[,-ncol(fasb)])) < 0.6*nrow(fasb)))
+
+kp <- c((colSums(!is.na(fasb[,-ncol(fasb)])) >= 0.6*nrow(fasb)))
+
+fasb <- fasb[,kp]
+validating <- validating[,kp]
+```
+
+#   Modeling
+
+### There is no need of cross validation in random Forest. it is estimated internally during the execution.
+```{r}
+
+model <- randomForest(classe~.,data = fasb)
+
+model
+```
+
+#   Model Evaluation
+
+###  Random Forest is used to produced the verification of the variable importance. 
+
+```{r}
+
+importance(model)
+```
+
+### Now we use the confusion Matrix to evaluate our model results
+
+```{r}
+confusionMatrix(predict(model,newdata=validating[,-ncol(validating)]),validating$classe)
+```
+### Calculation of Model Accuracy 
+```{r}
+sam <- c (as.numeric(predict(model,newdata=validating[,-ncol(validating)])==validating$classe))
+sam <- sum(sam)*100/nrow(validating)
+```
+#####   validation set = 99.73% n out-of-sample error = 0.17%
+
+
+# Model Test
+
+
+```{r}
+
+anab <- anab[,-1]
+anab <- anab[ ,kp]
+anab <- anab[,-ncol(anab)]
+
+testing <- rbind(fasb[100, -59] , anab)
+row.names(testing) <- c(100, 1:20)
+```
+
+#   Conclusion
+
+```{r}
+
+predictions <- predict(model,newdata=testing[-1, ])
+predictions
+```
+
+
